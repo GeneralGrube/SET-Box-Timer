@@ -51,7 +51,36 @@ if "last_elapsed" not in st.session_state:
 if "highscores" not in st.session_state:
     st.session_state.highscores = load_highscores()
 
+puzzle_numbers = {
+    "1 Inversion": 1,
+    "2 Schiebetür": 2,
+    "3 Falltür": 3,
+    "4 Ablage": 4,
+    "5 Schublade": 5,
+    "6 Guillotine": 6,
+    "7 Versteck": 7,        
+}
+
 st.title("SET-Box Timer")
+
+with st.expander("Aufgabenbeschreibung", expanded=False):
+    st.pills("Rätsel wählen", ["1 Inversion", "2 Schiebetür", "3 Falltür", "4 Ablage", "5 Schublade", "6 Guillotine", "7 Versteck"], key="puzzle_choice_video", default="1 Inversion", width="stretch")
+    try:
+        st.video(f"{puzzle_numbers[st.session_state.get("puzzle_choice_video")]}.mp4")
+    except:
+        st.info("Video nicht gefunden.")
+
+duel_mode = st.toggle("Aktiviere Duell-Modus (für 2 - 6 Spieler)", key="duel_mode", value=False)
+
+if duel_mode:
+    st.info("Im Duell-Modus werden die Zeiten für bis zu 6 Spieler erfasst. Jeder Spieler kann seinen Namen eingeben, und die Zeiten werden getrennt aufgezeichnet.")
+    st.text_input("Spieler 1 Namen eingeben:", key="username1")
+    st.text_input("Spieler 2 Namen eingeben:", key="username2")
+    st.text_input("Spieler 3 Namen eingeben:", key="username3")
+    st.text_input("Spieler 4 Namen eingeben:", key="username4")
+    st.text_input("Spieler 5 Namen eingeben:", key="username5")
+    st.text_input("Spieler 6 Namen eingeben:", key="username6")
+    st.warning("Duell-Modus bisher nicht implementiert.")
 
 st.text_input("Spieler Namen eingeben (optional):", key="username")
 st.pills("Rätsel wählen", ["1 Inversion", "2 Schiebetür", "3 Falltür", "4 Ablage", "5 Schublade", "6 Guillotine", "7 Versteck"], key="puzzle_choice", width="stretch")
