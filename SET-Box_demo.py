@@ -64,7 +64,7 @@ puzzle_numbers = {
 st.title("SET-Box Timer")
 
 with st.expander("Aufgabenbeschreibung", expanded=False):
-    st.pills("Rätsel wählen", ["1 Inversion", "2 Schiebetür", "3 Falltür", "4 Ablage", "5 Schublade", "6 Guillotine", "7 Versteck"], key="puzzle_choice_video", default="1 Inversion", width="stretch")
+    st.pills("Aufgabe wählen", ["1 Inversion", "2 Schiebetür", "3 Falltür", "4 Ablage", "5 Schublade", "6 Guillotine", "7 Versteck"], key="puzzle_choice_video", default="1 Inversion", width="stretch")
     try:
         st.video(f"{puzzle_numbers[st.session_state.get("puzzle_choice_video")]}.mp4")
     except:
@@ -83,7 +83,7 @@ if duel_mode:
     st.warning("Duell-Modus bisher nicht implementiert.")
 
 st.text_input("Spieler Namen eingeben (optional):", key="username")
-st.pills("Rätsel wählen", ["1 Inversion", "2 Schiebetür", "3 Falltür", "4 Ablage", "5 Schublade", "6 Guillotine", "7 Versteck"], key="puzzle_choice", width="stretch")
+st.pills("Aufgabe wählen", ["1 Inversion", "2 Schiebetür", "3 Falltür", "4 Ablage", "5 Schublade", "6 Guillotine", "7 Versteck"], key="puzzle_choice", width="stretch")
 
 
 
@@ -91,7 +91,7 @@ if st.button("Start/Stop", use_container_width=True):
     # Ensure puzzle selected
     puzzle = st.session_state.get("puzzle_choice") or ""
     if not puzzle:
-        st.warning("Bitte ein Rätsel auswählen, bevor der Timer gestartet wird.")
+        st.warning("Bitte ein Aufgabe auswählen, bevor der Timer gestartet wird.")
     else:
         username = st.session_state.get("username") or "Anonymous"
         # Toggle behavior
@@ -146,7 +146,7 @@ else:
 st.subheader("Highscores", width="stretch")
 puzzle = st.session_state.get("puzzle_choice") or ""
 if not puzzle:
-    st.warning("Kein Rätsel ausgewählt — Highscores sind pro Rätsel. Bitte ein Rätsel auswählen, um die zugehörigen Bestzeiten zu sehen.")
+    st.warning("Keine Aufgabe ausgewählt — Highscores sind pro Aufgabe. Bitte eine Aufgabe auswählen, um die zugehörigen Bestzeiten zu sehen.")
 else:
     # Ensure highscores is a dict (migrate old flat list format or recover from corrupted state)
     hs = st.session_state.get("highscores", {})
