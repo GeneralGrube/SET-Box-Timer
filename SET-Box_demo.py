@@ -337,6 +337,7 @@ if st.button("Scores online speichern", width="stretch"):
         with placeholder:
             st.info("Keine neuen Scores in dieser Sitzung zum Speichern.")
     
-st.session_state.session_scores
+#st.session_state.session_scores
 # expose function on session_state so it can be called from the UI code after recording an entry
 #st.session_state["push_score_to_sheet"] = push_score_to_sheet(, connection=conn, sheet_read_df=df, puzzle_mapper=PUZZLE_NUMBERS)
+
