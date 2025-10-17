@@ -243,10 +243,13 @@ st.pills("Aufgabe wählen", ["1 Inversion", "2 Schiebetür", "3 Falltür", "4 Ab
 if st.button("Start/Stop", width="stretch"):
     # Ensure puzzle selected
     puzzle = st.session_state.get("puzzle_choice") or ""
+    current_player = st.session_state.get("selected_player") or ""
     if not puzzle:
         st.warning("Bitte ein Aufgabe auswählen, bevor der Timer gestartet wird.")
+    elif not current_player:
+        st.warning("Bitte einen Spieler auswählen, bevor der Timer gestartet wird.")
     else:
-        username = st.session_state.get("selected_player") or "Anonymous"
+        username = current_player or "Anonymous"
         identifier = st.session_state[f"identifier{player_dict[username]}"] or 0
         # Toggle behavior
         if not st.session_state.running:
