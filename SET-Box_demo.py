@@ -212,26 +212,30 @@ if duel_mode:
         maximum_games = st.session_state.num_players * st.session_state.num_puzzles
         st.slider("Gesamtzahl Aufgaben", min_value=st.session_state.num_players, max_value=maximum_games, step=st.session_state.num_players, key="total_tasks", value=st.session_state.num_players)
         st.info(f"Bei dieser Einstellung dauert die Runde etwa {st.session_state.total_tasks * 4} bis {st.session_state.total_tasks * 6} Minuten.")
-        if st.button("Spielernamen eingeben:"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    for i in range(1, st.session_state.num_players + 1):
-                        st.text_input(f"Spieler {i} Namen eingeben:", key=f"username{i}")
-                with col2:
-                    for i in range(1, st.session_state.num_players + 1):
-                        st.text_input(f"Spieler {i} Identifier (z.B. Matrikel, optional):", key=f"identifier{i}")
+        #if st.button("Spielernamen eingeben:"):
+                
         st.button("Starte Duell")
-    #st.info("Im Duell-Modus werden die Zeiten für bis zu 6 Spieler erfasst. Jeder Spieler kann seinen Namen eingeben, und die Zeiten werden getrennt aufgezeichnet.")
-    #st.text_input("Spieler 1 Namen eingeben:", key="username1")
-    #st.text_input("Spieler 2 Namen eingeben:", key="username2")
-    #st.text_input("Spieler 3 Namen eingeben:", key="username3")
-    #st.text_input("Spieler 4 Namen eingeben:", key="username4")
-    #st.text_input("Spieler 5 Namen eingeben:", key="username5")
-    #st.text_input("Spieler 6 Namen eingeben:", key="username6")
-    #st.warning("Duell-Modus bisher nicht implementiert.")
 
-st.text_input("Spieler Namen eingeben (optional):", key="username")
-st.text_input("Spieler Identifier (z.B. Matrikel, optional):", key="identifier")
+with st.expander("Spieler Informationen", expanded=True):
+    st.slider("Anzahl Spieler", min_value=1, max_value=10, step=1, key="num_players_simple", value=1)
+    col1, col2 = st.columns(2)
+    if st.session_state.num_players_simple:
+        number_of_players = st.session_state.num_players_simple
+    else:
+        number_of_players = st.session_state.num_players
+    with col1:
+        for i in range(1, number_of_players + 1):
+            st.text_input(f"Spieler {i} Namen eingeben:", key=f"username{i}")
+    with col2:
+        for i in range(1, number_of_players + 1):
+            st.text_input(f"Spieler {i} Identifier (z.B. Matrikel, optional):", key=f"identifier{i}")
+
+#st.text_input("Spieler Namen eingeben (optional):", key="username")
+#st.text_input("Spieler Identifier (z.B. Matrikel, optional):", key="identifier")
+player_dict = {}
+for i in range(1, number_of_players + 1):
+    player_dict[f"{st.session_state[f'username{i}']}"] = i
+st.pills("Spieler wählen", player_dict.keys(), key="selected_player", width="stretch")
 st.pills("Aufgabe wählen", ["1 Inversion", "2 Schiebetür", "3 Falltür", "4 Ablage", "5 Schublade", "6 Guillotine", "7 Versteck"], key="puzzle_choice", width="stretch")
 
 
@@ -242,8 +246,8 @@ if st.button("Start/Stop", width="stretch"):
     if not puzzle:
         st.warning("Bitte ein Aufgabe auswählen, bevor der Timer gestartet wird.")
     else:
-        username = st.session_state.get("username") or "Anonymous"
-        identifier = st.session_state.get("identifier") or 0
+        username = st.session_state.get("selected_player") or "Anonymous"
+        identifier = st.session_state[f"identifier{player_dict[username]}"] or 0
         # Toggle behavior
         if not st.session_state.running:
             # Start timer
@@ -330,6 +334,6 @@ if st.button("Scores online speichern", width="stretch"):
         with placeholder:
             st.info("Keine neuen Scores in dieser Sitzung zum Speichern.")
     
-
+st.session_state.session_scores
 # expose function on session_state so it can be called from the UI code after recording an entry
 #st.session_state["push_score_to_sheet"] = push_score_to_sheet(, connection=conn, sheet_read_df=df, puzzle_mapper=PUZZLE_NUMBERS)
