@@ -118,7 +118,7 @@ def confirm_superspeed():
 def upload_highscore_dialog(connection: GSheetsConnection):
     number_of_players = st.session_state.get("num_players", 1)
     st.info("Der QR Code führt zur Online Umfrage. Am Ende der Umfrage wird eine Studien ID vergeben. Diese bitte unten eingeben, damit die Zeiten zugeordnet werden können.")
-    st.image("survey_QR.svg", width="stretch")
+    st.image("survey_QR.svg")
     col1, col2 = st.columns(2)
     with col1:
         for i in range(0, number_of_players):
@@ -135,6 +135,7 @@ def upload_highscore_dialog(connection: GSheetsConnection):
         if success_flag:
             st.session_state.session_scores = pd.DataFrame(columns=SCORES_COLS)
         st.rerun()
+
 
 
 
