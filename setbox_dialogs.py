@@ -117,6 +117,7 @@ def confirm_superspeed():
 @st.dialog("Upload Highscores")
 def upload_highscore_dialog(connection: GSheetsConnection):
     number_of_players = st.session_state.get("num_players", 1)
+    st.image("survey_QR.svg")
     st.info("Bitte Studien IDs der Spieler eingeben, damit die Zeiten zugeordnet werden können.")
     col1, col2 = st.columns(2)
     with col1:
@@ -134,3 +135,4 @@ def upload_highscore_dialog(connection: GSheetsConnection):
         if success_flag:
             st.session_state.session_scores = pd.DataFrame(columns=SCORES_COLS)
         st.rerun()
+
