@@ -9,7 +9,16 @@ Wähle den Spielmodus für deine Runde. Neben dem offenen Spiel gibt es verschie
 - :fire:**Paar-Duell**: Spieler werden in Paare aufgeteilt und treten gegeneinander an. Jedes Paar spielt die gleiche Anzahl an Aufgaben.
 - :fire:**Team-Duell**: Spieler werden in zwei Teams aufgeteilt und treten gegeneinander an. Jedes Team spielt die gleiche Anzahl an Aufgaben."""
 
-NUM_PUZZLE_TOOLTIP = "Nicht jeder Spieler muss alle Aufgaben lösen. Die Anzahl der Aufgaben gibt nur an, wie abwechslungsreich das Spiel wird."
+NUM_PUZZLE_TOOLTIP = """
+Verfügbare Aufgaben im Spiel. 
+- Nicht alle Aufgaben stehen in diesem Modus zur Verfügung. 
+- Nicht jeder Spieler muss alle Aufgaben lösen. 
+- Die Anzahl der Aufgaben gibt an, wie abwechslungsreich das Spiel wird. """
+
+TOTAL_TASKS_TOOLTIP = """
+Gesamtzahl der Aufgaben, die in dieser Runde gespielt werden. 
+- In Duell-Modi kommt jeder Spieler mindestens einmal an die Reihe.
+- Im Team-Duell spielt jedes Team die Hälfte der Aufgaben."""
 
 def puzzle_player_str(puzzle:str, player:str, team:str|None) -> str:
     puzzle = html_formatter(puzzle, 24, color=STDRED, span_only=True)
@@ -23,3 +32,16 @@ def puzzle_player_str(puzzle:str, player:str, team:str|None) -> str:
 
 def progress_text(counter: int, max_puzzles: int) -> str:
     return f"Runde {counter + 1} von {max_puzzles}"
+
+def format_rankings(rankings_table: pd.DataFrame) -> list:
+    rows = []
+    for i, e in rankings_table.iterrows():
+        if i == 0:
+            rows.append({"Platz": f"🥇 {i+1}", "Spieler": e.iloc[1], "Gesamtzeit": format_time(e.iloc[2]), "Aufgaben": e.iloc[3]})
+        elif i == 1:
+            rows.append({"Platz": f"🥈 {i+1}", "Spieler": e.iloc[1], "Gesamtzeit": format_time(e.iloc[2]), "Aufgaben": e.iloc[3]})
+        elif i == 2:
+            rows.append({"Platz": f"🥉 {i+1}", "Spieler": e.iloc[1], "Gesamtzeit": format_time(e.iloc[2]), "Aufgaben": e.iloc[3]})
+        else:
+            rows.append({"Platz": f"{i+1}", "Spieler": e.iloc[1], "Gesamtzeit": format_time(e.iloc[2]), "Aufgaben": e.iloc[3]})
+    return rows

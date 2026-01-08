@@ -14,7 +14,6 @@ from setbox_dialogs import *
 
 st.set_page_config(page_title="SET-Box Game Timer", layout="centered")
 
-
 def save_highscores(hs):
     try:
         with open(HIGHSCORE_FILE, "w", encoding="utf-8") as f:
@@ -33,7 +32,14 @@ def increment_game_counter():
     else:
         if st.session_state.game_counter < len(st.session_state.puzzle_sequence):
             st.session_state.game_counter += 1
+            st.session_state.last_elapsed = 0.0
 
+@st.fragment(run_every=st.session_state.run_timer_interval)
+def run_timer(ph):
+    elapsed = time.time() - st.session_state.start_time
+    ph.markdown(html_formatter(format_time(elapsed)), unsafe_allow_html=True)
+    
+    
 def startstop():
     st.session_state.superspeed = False
     play_mode = st.session_state.play_mode
@@ -59,6 +65,10 @@ def startstop():
         puzzle = INV_PUZZLE_NUMBERS[st.session_state.puzzle_sequence[st.session_state.game_counter][1]]
         username = st.session_state.player_dict[st.session_state.puzzle_sequence[st.session_state.game_counter][0]][0]
         semester = st.session_state.player_dict[st.session_state.puzzle_sequence[st.session_state.game_counter][0]][1]
+    elif play_mode == "team_duel":
+        puzzle = INV_PUZZLE_NUMBERS[st.session_state.puzzle_sequence[st.session_state.game_counter][1]]
+        username = st.session_state.player_dict[st.session_state.puzzle_sequence[st.session_state.game_counter][0]][0]
+        semester = st.session_state.player_dict[st.session_state.puzzle_sequence[st.session_state.game_counter][0]][1]
 
     # Toggle behavior
     if not st.session_state.running:
@@ -66,6 +76,7 @@ def startstop():
         st.session_state.start_time = time.time()
         st.session_state.running = True
         st.session_state.last_elapsed = 0.0
+        st.session_state.run_timer_interval = 0.1
     else:
         # Stop timer and record
         elapsed = time.time() - (st.session_state.start_time or time.time())
@@ -73,6 +84,7 @@ def startstop():
         st.session_state.last_elapsed = elapsed
         st.session_state.running = False
         st.session_state.start_time = None
+        st.session_state.run_timer_interval = None
         
         # Prepare entry with player and puzzle
         entry = {
@@ -90,15 +102,9 @@ def startstop():
 ### GUI Start
 st.title("SET-Box Game Timer")
 
-#with st.expander("Aufgabenbeschreibung", expanded=False):
-#    st.pills("Aufgabe wählen", ["1 Inversion", "2 Schiebetür", "3 Falltür", "4 Ablage", "5 Schublade", "6 Guillotine", "7 Versteck"], key="puzzle_choice_video", default="1 Inversion", width="stretch")
-#    try:
-#        st.video(f"""{PUZZLE_NUMBERS[st.session_state.get("puzzle_choice_video")]}.mp4""")
-#    except:
-#        st.info("Video nicht gefunden.")
-
 st.button("Neues Spiel beginnen...", key="new_game", on_click=play_mode_select_dialog, width="stretch")
 
+#Setup flow control
 if st.session_state.get("mode_setup_dialog_flag", False):
     st.session_state.mode_setup_dialog_flag = False
     reset_game()
@@ -106,63 +112,59 @@ if st.session_state.get("mode_setup_dialog_flag", False):
 if st.session_state.get("player_info_dialog_flag", False):
     st.session_state.player_info_dialog_flag = False
     player_info_dialog()
-
+if st.session_state.get("team_duel_dialog_flag", False):
+    st.session_state.team_duel_dialog_flag = False
+    team_overview_dialog()
 
 # Current Round Widgets
 if st.session_state.get("active_game_flag", False):
-    if st.session_state.play_mode == "open":
-        st.pills("Spieler wählen", st.session_state.inv_player_dict.keys(), key="selected_player", width="stretch")
-        st.pills("Aufgabe wählen", options=PUZZLES, key="puzzle_choice", width="stretch")
+    st.divider()
+    if (st.session_state.game_counter == len(st.session_state.puzzle_sequence)) & (st.session_state.play_mode != "open"):
+        st.balloons()
+        rankings_formatted = get_rankings(st.session_state.play_mode, st.session_state.puzzle_sequence, st.session_state.player_dict, st.session_state.game_timings, format_for_display=True)
+        st.markdown(html_formatter(f"And the winner is...\n🏆{rankings_formatted[0]["Spieler"]}🏆"), unsafe_allow_html=True)
+        st.dataframe(rankings_formatted, hide_index=True, width="stretch")
+        st.button("Scores online speichern", key="save_scores_end", on_click=upload_highscore_dialog, args=(conn,), width="stretch")
+        reset_game()
     else:
-        if st.session_state.game_counter < len(st.session_state.puzzle_sequence):
-            if st.session_state.play_mode in ["team_duel", "pair_duel"]:
-                curr_team = 2
-            else: curr_team = None
-            curr_puzzle = INV_PUZZLE_NUMBERS[st.session_state.puzzle_sequence[st.session_state.game_counter][1]]
-            curr_player = st.session_state.player_dict[st.session_state.puzzle_sequence[st.session_state.game_counter][0]][0]
+        if st.session_state.play_mode != "open":
             st.progress((st.session_state.game_counter) / len(st.session_state.puzzle_sequence), text=progress_text(st.session_state.game_counter, len(st.session_state.puzzle_sequence)))
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(puzzle_player_str(curr_puzzle, curr_player, curr_team), unsafe_allow_html=True)
-            with col2:
+        col1, col2 = st.columns(2, vertical_alignment="center")
+        # Player/Puzzle Widgets
+        with col1:
+            if st.session_state.play_mode == "open":
+                st.pills("Spieler wählen", st.session_state.inv_player_dict.keys(), key="selected_player", width="stretch")
+                st.pills("Aufgabe wählen", options=PUZZLES, key="puzzle_choice", width="stretch")
+                st.button(":question: Wie geht diese Aufgaben?", key="help_task", on_click=puzzle_help_dialog, args=(None,), width="stretch")
+            else:
+                curr_puzzle = INV_PUZZLE_NUMBERS[st.session_state.puzzle_sequence[st.session_state.game_counter][1]]
+                curr_player_id = st.session_state.puzzle_sequence[st.session_state.game_counter][0]
+                curr_player = st.session_state.player_dict[curr_player_id][0]
+                if st.session_state.play_mode == "team_duel":
+                    #infer team from player id
+                    if curr_player_id in st.session_state.team_dict[0]:
+                        curr_team = st.session_state.team_names.get(0, 'Team A')
+                    else:
+                        curr_team = st.session_state.team_names.get(1, 'Team B')
+                    st.pills("Team", options=[curr_team], default=curr_team, key="curr_team", width="stretch")
+                st.pills("Spieler", options=[curr_player], default=curr_player, key="curr_player", width="stretch")
+                st.pills("Aufgabe", options=[curr_puzzle], default=curr_puzzle, key="curr_puzzle", width="stretch")
                 st.button(":question: Wie geht diese Aufgabe?", key="help_task", on_click=puzzle_help_dialog, args=(st.session_state.puzzle_sequence[st.session_state.game_counter][1],), width="stretch")
 
-    #elif st.session_state.play_mode == "single_duel":
-    #    if st.session_state.game_counter < len(st.session_state.puzzle_sequence):
-    #        curr_puzzle = INV_PUZZLE_NUMBERS[st.session_state.puzzle_sequence[st.session_state.game_counter][1]]
-    #        curr_player = st.session_state.player_dict[st.session_state.puzzle_sequence[st.session_state.game_counter][0]][0]
-    #        st.progress((st.session_state.game_counter) / len(st.session_state.puzzle_sequence), text=progress_text(st.session_state.game_counter, len(st.session_state.puzzle_sequence)))
-    #        col1, col2 = st.columns(2)
-    #        with col1:
-    #            st.markdown(puzzle_player_str(curr_puzzle, curr_player), unsafe_allow_html=True)
-    #        with col2:
-    #            st.button(":question: Wie geht diese Aufgabe?", key="help_task", on_click=puzzle_help_dialog, args=(st.session_state.puzzle_sequence[st.session_state.game_counter][1],), width="stretch")
-    #        st.button("Nächste Aufgabe", key="next_task", on_click=increment_game_counter, width="stretch")
-        else:
-            st.balloons()
-            rankings_formatted = get_rankings(st.session_state.play_mode, st.session_state.puzzle_sequence, st.session_state.player_dict, st.session_state.game_timings, format_for_display=True)
-            st.markdown(html_formatter(f"And the winner is...\n🏆{rankings_formatted[0]["Spieler"]}🏆"), unsafe_allow_html=True)
-            st.dataframe(rankings_formatted, hide_index=True, width="stretch")
-            st.button("Scores online speichern", key="save_scores_end", on_click=upload_highscore_dialog, args=(conn,), width="stretch")
-            reset_game()
-        
-# Time Widgets
-if st.session_state.get("active_game_flag", False):
-    col1, col2 = st.columns(2, vertical_alignment="center")
-    with col1:
-        timer_placeholder = st.empty()
-    with col2:
-        st.button("**Start/Stop**", key="startstop", on_click=startstop, width="stretch")
-    
-    if st.session_state.running:
-        # compute current elapsed and refresh app so the timer updates continuously
-        elapsed = time.time() - st.session_state.start_time
-        timer_placeholder.markdown(html_formatter(f"{format_time(elapsed)}"), unsafe_allow_html=True)
-        # short sleep to avoid a tight busy loop, then request a rerun to update UI
-        time.sleep(0.1)
-        st.rerun()
-    else:
-        timer_placeholder.markdown(html_formatter(f"{format_time(st.session_state.last_elapsed)}"), unsafe_allow_html=True)
+        # Time Widgets            
+        with col2:
+            st.button("⏱️ **Start/Stop**", key="startstop", on_click=startstop, width="stretch")
+            #timer_placeholder = st.empty()
+            if "timer_placeholder" not in st.session_state:
+                st.session_state.timer_placeholder = st.empty()
+                #st.session_state.timer_placeholder.markdown(html_formatter(format_time(0)), unsafe_allow_html=True)
+            if st.session_state.get("running", False):
+                run_timer(st.session_state.timer_placeholder)
+            else:
+                st.session_state.timer_placeholder.markdown(html_formatter(format_time(st.session_state.last_elapsed)), unsafe_allow_html=True)
+
+        if st.session_state.play_mode != "open":
+            st.button("Nächste Aufgabe", key="next_task", on_click=increment_game_counter, width="stretch")
 
     if st.session_state.error_msg:
         st.error(st.session_state.error_msg)
@@ -170,16 +172,7 @@ if st.session_state.get("active_game_flag", False):
     # Catch unreasonable short runs before writing them to the highscores.
     if st.session_state.score_pending_flag == True:    
         if st.session_state.last_elapsed < 20:
-            st.warning("Eine Runde unter 20 Sekunden ist sehr unwahrscheinlich. Warst du wirklich so schnell?")
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Ja, klar!", width="stretch"):
-                    st.session_state.superspeed = True
-            with col2:
-                if st.button("Ne, verklickt...", width="stretch"):
-                    st.session_state.superspeed = False
-                    st.session_state.score_pending_flag = False
-                    st.rerun()
+            confirm_superspeed_dialog()
 
         if (st.session_state.superspeed == True) | (st.session_state.last_elapsed >= 20):
             st.session_state.superspeed = False
@@ -198,11 +191,10 @@ if st.session_state.get("active_game_flag", False):
             st.session_state.game_timings[st.session_state.game_counter] = timings_entry
             st.rerun()
 
-    if st.session_state.play_mode != "open":
-        st.button("Nächste Aufgabe", key="next_task", on_click=increment_game_counter, width="stretch")
 
 # Highscore Widgets
 if st.session_state.get("active_game_flag", False):
+    st.divider()
     # Current Round Scores
     if st.session_state.play_mode != "open":
         st.subheader("Rundenzeiten", width="stretch")

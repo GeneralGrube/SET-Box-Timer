@@ -5,6 +5,7 @@ from streamlit_gsheets import GSheetsConnection
 from setbox_constants import *
 from setbox_helpers import *
 from setbox_connections import *
+from setbox_texts import *
 
 def initialize_session_state(conn: GSheetsConnection):
     # Initialize session state
@@ -16,7 +17,8 @@ def initialize_session_state(conn: GSheetsConnection):
         st.session_state.start_time = None
     if "last_elapsed" not in st.session_state:
         st.session_state.last_elapsed = 0.0
-    
+    if "run_timer_interval" not in st.session_state:
+        st.session_state.run_timer_interval = None
     if "score_pending_flag" not in st.session_state:
         st.session_state.score_pending_flag = False
     if "superspeed" not in st.session_state:
@@ -41,6 +43,8 @@ def initialize_session_state(conn: GSheetsConnection):
         st.session_state.mode_setup_dialog_flag = False
     if "player_info_dialog_flag" not in st.session_state:
         st.session_state.player_info_dialog_flag = False
+    if "team_duel_dialog_flag" not in st.session_state:
+        st.session_state.team_duel_dialog_flag = False
 
     #Setup variables
     if "num_players" not in st.session_state:
@@ -74,67 +78,83 @@ def game_setup(play_mode: str, num_players: int, num_puzzles:int, random_pairing
         random.shuffle(players)
     
     if play_mode == "team_duel":
-        team_size = 2
-        teams = [players[i:i + team_size] for i in range(0, len(players), team_size)]
-        team_dict = {}
-        for team_idx, team_members in enumerate(teams, start=1):
-            for member in team_members:
-                team_dict[member] = f"Team {team_idx}"
+        team_dict = {}   # dict of team index to list of player indices
+        for i,player in enumerate(players):
+            team_idx = i % 2
+            if team_idx not in team_dict:
+                team_dict[team_idx] = []
+            team_dict[team_idx].append(player)   
+        
         st.session_state["team_dict"] = team_dict
-        print(team_dict)
-    #elif play_mode == "pair_duel":
-    #    pair_size = 2
-    #    pairs = [players[i:i + pair_size] for i in range(0, len(players), pair_size)]
-    #    pair_dict = {}
-    #    for pair_idx, pair_members in enumerate(pairs, start=1):
-    #        for member in pair_members:
-    #            pair_dict[member] = f"Paar {pair_idx}"
-    #    st.session_state["pair_dict"] = pair_dict
         
-    # Aufgabenabfolge einstellen (nur bei Duell Modi)
-    if play_mode in ["single_duel", "pair_duel", "team_duel"]:
-        all_puzzles = list(PUZZLE_NUMBERS.values())[:5]
-        selected_puzzles = random.sample(all_puzzles, num_puzzles)
+    # Aufgabenabfolge einstellen
+    all_puzzles = list(PUZZLE_NUMBERS.values())[:5]
+    selected_puzzles = random.sample(all_puzzles, num_puzzles)
+    
+    puzzle_sequence = [] #list of team/pair/player number and puzzle tuples
+    shifter = 0
+    player_puzzles = {} # keep track with player has done which puzzles
+    for i in range(num_players):
+        player_puzzles[i] = []
+    
+    if play_mode == "single_duel":
+        starting = random.randint(0, num_players - 1)
+        total = num_players
+        for i in range(total_tasks):
+            curr_puzzle = selected_puzzles[(i+shifter) % len(selected_puzzles)]
+            curr_player = (starting + (i % total)) % total
+            if (curr_puzzle not in player_puzzles[curr_player]) | (len(player_puzzles[curr_player]) >= len(selected_puzzles)):
+                player_puzzles[curr_player].append(curr_puzzle)
+                puzzle_sequence.append((curr_player, curr_puzzle))
+            else:
+                #find next available puzzle for this player
+                for pz in selected_puzzles:
+                    if pz not in player_puzzles[curr_player]:
+                        player_puzzles[curr_player].append(pz)
+                        puzzle_sequence.append((curr_player, pz))
+                        break
+            if (i + 1) % len(selected_puzzles) == 0:
+                if len(selected_puzzles) >= num_players:
+                    shifter += 1  # change starting puzzle after each full cycle
+    
+    elif play_mode == "team_duel":
+        starting_team = random.randint(0, 1)    
+        team_player_counters = {0:0, 1:0} # keep track of which player is next for each team
+        team_puzzles = {0:[], 1:[]} # keep track of which puzzles have been assigned to each team
         
-        puzzle_sequence = [] #list of team/pair/player number and puzzle tuples
-        shifter = 0
-        player_puzzles = {} # keep track with player has done which puzzles
-        for i in range(num_players):
-            player_puzzles[i] = []
-        
-        if play_mode == "single_duel":
-            starting = random.randint(0, num_players - 1)
-            total = num_players
-            for i in range(total_tasks):
+        for i in range(total_tasks):    
+            # team & player selection                
+            curr_team = (starting_team + (i % 2)) % 2
+            curr_player_list = team_dict[curr_team]
+            curr_player_idx = team_player_counters[curr_team] % len(curr_player_list)
+            curr_player = curr_player_list[curr_player_idx]
+            
+            # puzzle selection
+            # make sure every team sees every puzzle at least once if enough tasks (num_puzzles >= total_tasks/2)
+            if (i // 2) == num_puzzles:
+                played_puzzles = set(team_puzzles[curr_team])
+                remaining_puzzle = set(selected_puzzles).difference(played_puzzles)
+                curr_puzzle = list(remaining_puzzle)[0]
+            # else just semi-randomly select a puzzle
+            else:
                 curr_puzzle = selected_puzzles[(i+shifter) % len(selected_puzzles)]
-                curr_player = (starting + (i % total)) % total
-                if (curr_puzzle not in player_puzzles[curr_player]) | (len(player_puzzles[curr_player]) >= len(selected_puzzles)):
-                    player_puzzles[curr_player].append(curr_puzzle)
-                    puzzle_sequence.append((curr_player, curr_puzzle))
-                else:
-                    #find next available puzzle for this player
-                    for pz in selected_puzzles:
-                        if pz not in player_puzzles[curr_player]:
-                            player_puzzles[curr_player].append(pz)
-                            puzzle_sequence.append((curr_player, pz))
-                            break
-                if (i + 1) % len(selected_puzzles) == 0:
-                    if len(selected_puzzles) >= num_players:
-                        shifter += 1  # change starting puzzle after each full cycle
-        
-        #elif play_mode == "pair_duel":
-        #    starting = random.randint(0, (num_players // 2) - 1)
-        #    total = num_players // 2
-        elif play_mode == "team_duel":
-            starting = random.randint(0, (num_players // 2) - 1)
-            total = num_players // 2
-            for i in range(total_tasks):
-                curr_puzzle = selected_puzzles[(i+shifter) % len(selected_puzzles)]
-                curr_player = (starting + (i % total)) % total
-                     
-        
-        
- 
+            # check if player has already done this puzzle
+            inc = 1
+            while curr_puzzle in player_puzzles[curr_player]:
+                # increment puzzle counter to get next puzzle
+                curr_puzzle = selected_puzzles[( (i + inc + shifter) % len(selected_puzzles))]
+                inc += 1
+            
+            # keep track of assigned puzzles
+            player_puzzles[curr_player].append(curr_puzzle)
+            team_puzzles[curr_team].append(curr_puzzle)  
+            puzzle_sequence.append((curr_player, curr_puzzle))
+            
+            team_player_counters[curr_team] += 1
+            if (i + 1) % len(selected_puzzles) == 0:
+                if len(selected_puzzles) >= len(curr_player_list):
+                    shifter += 1  # change starting puzzle after each full cycle
+            
     return puzzle_sequence
 
 def set_highscores(current_highscores: dict, current_puzzle: str, entry: dict):
@@ -165,19 +185,28 @@ def get_rankings(play_mode:str, puzzle_sequence: list, player_dict: dict, game_t
             return format_rankings(player_scores)
         else:
             return player_scores
-
+    if play_mode == "team_duel":
+        # Seperate timings for each team
+        team_dict = st.session_state.get("team_dict", {})
+        team_scores = {}
+        for team_idx, team_members in team_dict.items():
+            puzzle_list = []
+            cum_time = 0.0
+            for player in team_members:
+                player_timings = timings_df[timings_df["player_id"] == player]
+                puzzle_list.extend(list(player_timings["puzzle"]))
+                cum_time += player_timings["time"].sum()
+            team_name = st.session_state.team_names.get(team_idx, f"Team {team_idx + 1}")
+            team_scores[team_idx] = (team_idx, team_name, cum_time, puzzle_list)
+        # sort to get rank
+        team_scores = pd.DataFrame(data=team_scores.values(), index=team_scores.keys(), columns=["team_id", "team_name", "cum_time", "puzzles_solved"])
+        team_scores.sort_values(by=["cum_time"], inplace=True)
+        team_scores.reset_index(drop=True, inplace=True)
+        if format_for_display:
+            return format_rankings(team_scores)
+        else:
+            return team_scores
     return None
 
-def format_rankings(rankings_table: pd.DataFrame) -> list:
-    rows = []
-    for i, e in rankings_table.iterrows():
-        if i == 0:
-            rows.append({"Platz": f"🥇 {i+1}", "Spieler": e.iloc[1], "Gesamtzeit": format_time(e.iloc[2]), "Aufgaben": e.iloc[3]})
-        elif i == 1:
-            rows.append({"Platz": f"🥈 {i+1}", "Spieler": e.iloc[1], "Gesamtzeit": format_time(e.iloc[2]), "Aufgaben": e.iloc[3]})
-        elif i == 2:
-            rows.append({"Platz": f"🥉 {i+1}", "Spieler": e.iloc[1], "Gesamtzeit": format_time(e.iloc[2]), "Aufgaben": e.iloc[3]})
-        else:
-            rows.append({"Platz": f"{i+1}", "Spieler": e.iloc[1], "Gesamtzeit": format_time(e.iloc[2]), "Aufgaben": e.iloc[3]})
-    return rows
+
 
