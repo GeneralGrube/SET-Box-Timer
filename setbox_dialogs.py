@@ -152,6 +152,8 @@ def confirm_superspeed_dialog():
 @st.dialog("Upload Highscores")
 def upload_highscore_dialog(connection: GSheetsConnection):
     number_of_players = st.session_state.get("num_players", 1)
+    st.info("Bitte für Evaluation folgenden Link scannen.")
+    st.image("survey_QR.svg", width="stretch")
     st.info("Bitte Studien IDs der Spieler eingeben, damit die Zeiten zugeordnet werden können.")
     col1, col2 = st.columns(2)
     with col1:
