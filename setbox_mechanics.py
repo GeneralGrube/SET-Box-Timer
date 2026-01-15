@@ -7,8 +7,14 @@ from setbox_helpers import *
 from setbox_connections import *
 from setbox_texts import *
 
-def initialize_session_state(conn: GSheetsConnection):
+def initialize_session_state(conn: GSheetsConnection, localizer: Localizer):
     # Initialize session state
+
+    # General Setup
+    if "session_startup" not in st.session_state:
+        st.session_state.session_startup = True    
+    if "loc" not in st.session_state:
+        st.session_state.loc = localizer
 
     # Current run variables
     if "running" not in st.session_state:
@@ -33,12 +39,15 @@ def initialize_session_state(conn: GSheetsConnection):
         st.session_state.session_scores = pd.DataFrame(columns=SCORES_COLS)
     if "highscores" not in st.session_state:
         st.session_state.highscores = load_online_highscores(conn)
+    if "player_dict" not in st.session_state:
+        st.session_state.player_dict = {}  # dict of player index to (name, semester, study_id)
 
     # Misc
     if "error_msg" not in st.session_state:
         st.session_state.error_msg = ""
 
     #Setup flow control variables
+    
     if "mode_setup_dialog_flag" not in st.session_state:
         st.session_state.mode_setup_dialog_flag = False
     if "player_info_dialog_flag" not in st.session_state:
@@ -50,7 +59,7 @@ def initialize_session_state(conn: GSheetsConnection):
     if "num_players" not in st.session_state:
         st.session_state.num_players = 2
 
-    # Game flow control variables
+    # App & Game flow control variables
     if "active_game_flag" not in st.session_state:
         st.session_state.active_game_flag = False
     if "play_mode" not in st.session_state:

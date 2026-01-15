@@ -1,24 +1,32 @@
 from setbox_helpers import *
 from setbox_constants import *
+import json
+import os
 
-PLAY_MODE_TOOLTIP = """
-Wähle den Spielmodus für deine Runde. Neben dem offenen Spiel gibt es verschiedene 	
-:fire: Duell-Modi. In den Duell-Modi treten Spieler gegeneinander an, die Zeiten werden gestoppt und schließlich ein Gewinner ermittelt.
-- **Offenes Spiel**: Jeder Spieler spielt für sich allein. Aufgaben können frei gewählt werden.
-- :fire:**Einzel-Duell**: Zwei oder mehr Spieler treten gegeneinander an. Spieler spielen die gleiche Anzahl an Aufgaben.
-- :fire:**Paar-Duell**: Spieler werden in Paare aufgeteilt und treten gegeneinander an. Jedes Paar spielt die gleiche Anzahl an Aufgaben.
-- :fire:**Team-Duell**: Spieler werden in zwei Teams aufgeteilt und treten gegeneinander an. Jedes Team spielt die gleiche Anzahl an Aufgaben."""
+class Localizer:
+    def __init__(self, language_code):
+        self.language_code = language_code
+        self.translations = self._load_translations()
 
-NUM_PUZZLE_TOOLTIP = """
-Verfügbare Aufgaben im Spiel. 
-- Nicht alle Aufgaben stehen in diesem Modus zur Verfügung. 
-- Nicht jeder Spieler muss alle Aufgaben lösen. 
-- Die Anzahl der Aufgaben gibt an, wie abwechslungsreich das Spiel wird. """
+    def _load_translations(self):
+        file_path = f"translations/{self.language_code}.json"
+        
+        # Fallback to German if the requested language file doesn't exist
+        if not os.path.exists(file_path):
+            file_path = "translations/de.json"
+            
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
 
-TOTAL_TASKS_TOOLTIP = """
-Gesamtzahl der Aufgaben, die in dieser Runde gespielt werden. 
-- In Duell-Modi kommt jeder Spieler mindestens einmal an die Reihe.
-- Im Team-Duell spielt jedes Team die Hälfte der Aufgaben."""
+    def translate(self, key, **kwargs):
+        # Get the string, fallback to the key itself if not found
+        text = self.translations.get(key, key)
+        
+        # Handle datatypes that are not strings
+        if not isinstance(text, str):
+            return text
+        # Handle dynamic variables like {name}
+        return text.format(**kwargs)
 
 def puzzle_player_str(puzzle:str, player:str, team:str|None) -> str:
     puzzle = html_formatter(puzzle, 24, color=STDRED, span_only=True)

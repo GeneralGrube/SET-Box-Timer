@@ -2,11 +2,19 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import time
 import json
+import os
 from datetime import datetime
 import pandas as pd
 
 from setbox_texts import *
 from setbox_mechanics import *
+print("Checkpoint reached: start of setbox_main.py")
+#Establish connection to Google Sheets
+conn = st.connection("gsheets", type=GSheetsConnection)
+localizer = Localizer("de")
+initialize_session_state(conn, localizer)
+
+
 from setbox_constants import *
 from setbox_dialogs import *
 
@@ -14,16 +22,14 @@ from setbox_dialogs import *
 
 st.set_page_config(page_title="SET-Box Game Timer", layout="centered")
 
-def save_highscores(hs):
-    try:
-        with open(HIGHSCORE_FILE, "w", encoding="utf-8") as f:
-            json.dump(hs, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+#def save_highscores(hs):
+#    try:
+#        with open(HIGHSCORE_FILE, "w", encoding="utf-8") as f:
+#            json.dump(hs, f, ensure_ascii=False, indent=2)
+#    except Exception:
+#        pass
 
-#Establish connection to Google Sheets
-conn = st.connection("gsheets", type=GSheetsConnection)
-initialize_session_state(conn)
+
 
 def increment_game_counter():
     # check if time was recorded at all
@@ -39,7 +45,7 @@ def run_timer(ph):
     elapsed = time.time() - st.session_state.start_time
     ph.markdown(html_formatter(format_time(elapsed)), unsafe_allow_html=True)
     
-    
+print("Checkpoint reached: startstop")    
 def startstop():
     st.session_state.superspeed = False
     play_mode = st.session_state.play_mode
@@ -100,21 +106,27 @@ def startstop():
         st.session_state.score_pending_flag = True
 
 ### GUI Start
+print("Checkpoint reached: GUI Start")
 st.title("SET-Box Game Timer")
 
 st.button("Neues Spiel beginnen...", key="new_game", on_click=play_mode_select_dialog, width="stretch")
 
 #Setup flow control
+if st.session_state.get("session_startup", False):
+    st.session_state.session_startup = False
+    session_startup()
 if st.session_state.get("mode_setup_dialog_flag", False):
     st.session_state.mode_setup_dialog_flag = False
     reset_game()
-    mode_setup_dialog()
+    settings_dialog()
 if st.session_state.get("player_info_dialog_flag", False):
     st.session_state.player_info_dialog_flag = False
-    player_info_dialog()
+    player_dialog()
 if st.session_state.get("team_duel_dialog_flag", False):
     st.session_state.team_duel_dialog_flag = False
-    team_overview_dialog()
+    team_dialog()
+
+print("Checkpoint reached: GUI Main Area")
 
 # Current Round Widgets
 if st.session_state.get("active_game_flag", False):
@@ -190,7 +202,7 @@ if st.session_state.get("active_game_flag", False):
                              st.session_state.current_entry["time_seconds"]) #timing
             st.session_state.game_timings[st.session_state.game_counter] = timings_entry
             st.rerun()
-
+print("Checkpoint reached: GUI Highscore Area")
 
 # Highscore Widgets
 if st.session_state.get("active_game_flag", False):
@@ -230,16 +242,18 @@ if st.session_state.get("active_game_flag", False):
 if st.session_state.play_mode == "open" and st.session_state.session_scores is not None and not st.session_state.session_scores.empty:
     st.divider()
     placeholder = st.empty()
-    if st.button("Scores online speichern", width="stretch"):
-        # push all session scores to sheet
-        old_scores = load_online_for_update(conn)
-        success = push_score_to_sheet(st.session_state.session_scores.copy(deep=True), connection=conn, sheet_read_df=old_scores, puzzle_mapper=PUZZLE_NUMBERS)
-        if success:    
-            #reset session scores after pushing
-            st.session_state.session_scores = pd.DataFrame(columns=SCORES_COLS)
-            with placeholder:
-                st.success("Scores wurden online gespeichert.")
-        else:
-            with placeholder:
-                st.error("Fehler beim Speichern der Scores online. Bitte später erneut versuchen.")
+    st.button("Scores online speichern", key="save_scores_end_open", on_click=upload_highscore_dialog, args=(conn,), width="stretch")
+    #if st.button("Scores online speichern", width="stretch"):
+        
+        ## push all session scores to sheet
+        #old_scores = load_online_for_update(conn)
+        #success = push_score_to_sheet(st.session_state.session_scores.copy(deep=True), connection=conn, sheet_read_df=old_scores, puzzle_mapper=PUZZLE_NUMBERS)
+        #if success:    
+        #    #reset session scores after pushing
+        #    st.session_state.session_scores = pd.DataFrame(columns=SCORES_COLS)
+        #    with placeholder:
+        #        st.success("Scores wurden online gespeichert.")
+        #else:
+        #    with placeholder:
+        #        st.error("Fehler beim Speichern der Scores online. Bitte später erneut versuchen.")
     

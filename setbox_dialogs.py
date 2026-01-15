@@ -1,5 +1,6 @@
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
+from streamlit import session_state as ss
 
 from setbox_constants import *
 from setbox_helpers import *
@@ -7,32 +8,40 @@ from setbox_texts import *
 from setbox_mechanics import *
 from setbox_connections import *
 
-@st.dialog(title="Keine Aufgabenzeit vorhanden.", width="medium")
-def forgot_record_dialog():
-    st.warning("Es wurde keine Zeit für die Aufgabe aufgezeichnet.")
-    if st.button("Verstanden", width="stretch"):
-        st.rerun()
-
-@st.dialog(title="Wie geht diese Aufgabe?", width="medium")
-def puzzle_help_dialog(puzzle_number):
-    if puzzle_number is None:
-        st.pills("Aufgabe wählen", PUZZLES, key="puzzle_choice_video", default="1 Inversion", width="stretch")
-        puzzle_number = PUZZLE_NUMBERS[st.session_state.get("puzzle_choice_video")]
+@st.dialog(title="Select Language", width="medium",dismissible=True)
+def session_startup():
+    #is in English, this dialog does not get localized. Localization based on language selection takes place after closing this dialog.
+    st.info("This app accompanies the Simple Endoscopic Tasks Box (SET-Box) for training basic endoscopic skills. Please select your preferred language. You may watch the instruction videos for the puzzles.")
+    
+    lang_dict = {
+        "DE": "de",
+        "EN": "en"
+    }
+    st.pills("Select Language", ["DE", "EN"], key="language_picker", default="DE", width="stretch")
+    st.session_state.loc = Localizer(lang_dict[st.session_state.get("language_picker", "DE")])
+    
+    #localize
+    st.pills(ss.loc.translate("puzzle_help_dialog_picker"), PUZZLES, key="puzzle_choice_video", default="1 Inversion", width="stretch")
+    puzzle_number = PUZZLE_NUMBERS[st.session_state.get("puzzle_choice_video")]
     try:
         st.video(f"""{puzzle_number}.mp4""")
     except:
-        st.info("Video nicht gefunden.")
+        st.info(ss.loc.translate("puzzle_help_dialog_no_video"))
 
-@st.dialog(title="Spielmodus auswählen", width="medium", dismissible=False)
+    if st.button("Okay!", width="stretch"):
+        st.rerun()
+
+@st.dialog(title=ss.loc.translate("play_mode_dialog_title"), width="medium", dismissible=False)
 def play_mode_select_dialog():
-    st.segmented_control("Spiel-Modus auswählen", options=PLAY_MODES.keys(), key="play_mode_dialog", help=PLAY_MODE_TOOLTIP, default="Offenes Spiel", width="stretch") #, args=(PLAY_MODES[st.session_state.play_mode],)
+    PLAY_MODES_LOCALIZED = ss.loc.translate("play_modes")
+    st.segmented_control(ss.loc.translate("play_mode_dialog_label"), options=PLAY_MODES_LOCALIZED.keys(), key="play_mode_dialog", help=ss.loc.translate("play_mode_tooltip"), default=list(PLAY_MODES_LOCALIZED)[0], width="stretch") #, args=(PLAY_MODES[st.session_state.play_mode],)
     try:
-        st.session_state.play_mode = PLAY_MODES[st.session_state.get("play_mode_dialog", "Offenes Spiel")]
+        st.session_state.play_mode = PLAY_MODES_LOCALIZED[st.session_state["play_mode_dialog"]]
         play_mode = st.session_state.play_mode
         if play_mode == "pair_duel":
             st.error("Der 'Paar-Duell' Modus ist aktuell nicht verfügbar. Bitte wähle einen anderen Modus.")
         
-        if st.button("Weiter zu den Einstellungen...", use_container_width=True): 
+        if st.button(ss.loc.translate("play_mode_dialog_continue"), use_container_width=True): 
             mode_settings = MODE_SETTINGS[play_mode]
             st.session_state.min_players, st.session_state.max_players, st.session_state.player_step_size = mode_settings[0], mode_settings[1], mode_settings[2]
             st.session_state.mode_setup_dialog_flag = True
@@ -40,35 +49,39 @@ def play_mode_select_dialog():
     except KeyError:
         pass
 
-@st.dialog(title="Spielmodus Einstellungen", width="medium", dismissible=False)
-def mode_setup_dialog():
+@st.dialog(title=ss.loc.translate("settings_dialog_title"), width="medium", dismissible=False)
+def settings_dialog():
     play_mode = st.session_state.play_mode
     
     if play_mode == "team_duel":
         col1, col2 = st.columns(2)
         with col1:
-            name_team_a = st.text_input("Name Team A", value="🔥 Hot Docs 🌭")
+            name_team_a = st.text_input(ss.loc.translate("settings_dialog_team_name_a_label"), value=ss.loc.translate("settings_dialog_team_a_name_suggestion"))
         with col2:
-            name_team_b = st.text_input("Name Team B", value="💨 Gas Busters 👻")
+            name_team_b = st.text_input(ss.loc.translate("settings_dialog_team_name_b_label"), value=ss.loc.translate("settings_dialog_team_b_name_suggestion"))
 
-    num_players = st.slider("Anzahl Spieler", min_value=st.session_state.min_players, max_value=st.session_state.max_players, step=st.session_state.player_step_size, value=st.session_state.min_players)
+    num_players = st.slider(ss.loc.translate("settings_dialog_num_players_label"), min_value=st.session_state.min_players, max_value=st.session_state.max_players, step=st.session_state.player_step_size, value=st.session_state.min_players)
     
     if play_mode in ["pair_duel", "team_duel"]:
-        random_pairing = st.toggle("Zufällige Teameinteilung", value=False, help="Bei aktivierter Option werden die Spieler zufällig in Teams aufgeteilt.")
+        random_pairing = st.toggle(ss.loc.translate("settings_dialog_random_pairing_label"), value=False, help=ss.loc.translate("settings_dialog_random_pairing_tooltip"))
     else: random_pairing = False
 
     if play_mode != "open":
-        num_puzzles = st.slider("Anzahl Aufgaben", min_value=2, max_value=5, step=1, value=2, help=NUM_PUZZLE_TOOLTIP)
-    else: num_puzzles = 0
-
-    if play_mode != "open":
-        maximum_games = num_players * num_puzzles
-        total_tasks = st.slider("Gesamtzahl Aufgaben", min_value=num_players, max_value=maximum_games, step=num_players, value=num_players, help=TOTAL_TASKS_TOOLTIP)
-        st.info(f"Bei dieser Einstellung dauert die Runde etwa {total_tasks * 4} bis {total_tasks * 6} Minuten.")
+        maximum_games = num_players * 5
+        total_tasks = st.slider(ss.loc.translate("settings_dialog_total_tasks_label"), min_value=num_players, max_value=maximum_games, step=num_players, value=num_players, help=ss.loc.translate("settings_dialog_total_tasks_tooltip"))
+        st.info(ss.loc.translate("settings_dialog_total_tasks_info", from_min=str(total_tasks * 4), to_min=str(total_tasks * 6)))
     else: total_tasks = 0
 
-    if st.button("Weiter zu den Spieler Informationen...", use_container_width=True):
+    if play_mode == "open":
+        num_puzzles = 0
+    elif play_mode == "single_duel":
+        num_puzzles = total_tasks // num_players 
+    elif play_mode == "team_duel":
+        num_puzzles = total_tasks // 2
+
+    if st.button(ss.loc.translate("settings_dialog_continue"), use_container_width=True):
         st.session_state.num_players = num_players
+        # if number of 
         st.session_state.num_puzzles = num_puzzles
         st.session_state.random_pairing = random_pairing
         st.session_state.total_tasks = total_tasks
@@ -79,30 +92,38 @@ def mode_setup_dialog():
         st.session_state.player_info_dialog_flag = True
         st.rerun()
 
-@st.dialog(title="Spieler Informationen", width="medium", dismissible=False)
-def player_info_dialog():
+@st.dialog(title=ss.loc.translate("player_dialog_title"), width="medium", dismissible=False)
+def player_dialog():
     number_of_players = st.session_state.get("num_players", 1)
     
+    #prearrange playerdict if not existing
+    if "player_dict" not in st.session_state:
+        st.session_state.player_dict = {i: ("", 6) for i in range(0, number_of_players)}
+    #append existing player dict if number of players increased
+    if len(st.session_state.player_dict.keys()) < number_of_players:
+        for i in range(len(st.session_state.player_dict.keys()), number_of_players):
+            st.session_state.player_dict[i] = ("", 6)
+
     col1, col2 = st.columns(2)
     with col1:
         for i in range(0, number_of_players):
-            st.text_input(f"Spieler {i+1} Namen eingeben:", key=f"username{i}")
+            st.text_input(ss.loc.translate("player_dialog_name", idx=(str(i+1))), key=f"username{i}", value=st.session_state.player_dict[i][0])
     with col2:
         for i in range(0, number_of_players):
-            st.number_input(f"Spieler {i+1} Semster:", key=f"semster{i}", min_value=1, max_value=20, value=6, step=1)
+            st.number_input(ss.loc.translate("player_dialog_semester", idx=(str(i+1))), key=f"semester{i}", min_value=1, max_value=20, value=st.session_state.player_dict[i][1], step=1)
     error_placeholder = st.empty()
     
-    if st.button("Spieler Informationen speichern", use_container_width=True):
+    if st.button(ss.loc.translate("player_dialog_continue"), use_container_width=True):
         error_flag = False
         player_dict = {}
         checked_player_names = []
         for i in range(0, number_of_players):
             # check if name already exists, if so return with error message
             if st.session_state.get(f"username{i}") in checked_player_names:
-                error_placeholder.error(f"Der Name '{st.session_state.get(f'username{i}')}' wurde mehrfach eingegeben. Bitte eindeutige Spielernamen verwenden.")
+                error_placeholder.error(ss.loc.translate("player_dialog_error_duplicate_name", name=st.session_state.get(f"username{i}")))
                 error_flag = True
             else:
-                player_dict[i] = (f"{st.session_state[f'username{i}']}", st.session_state.get(f"semster{i}", ""))
+                player_dict[i] = (f"{st.session_state[f'username{i}']}", st.session_state.get(f"semester{i}", ""))
                 checked_player_names.append(f"{st.session_state[f'username{i}']}")
         if not error_flag:
             st.session_state.player_dict = player_dict
@@ -114,8 +135,8 @@ def player_info_dialog():
                 st.session_state.team_duel_dialog_flag = True
             st.rerun()
 
-@st.dialog("Team Übersicht", width="medium", dismissible=True)
-def team_overview_dialog():
+@st.dialog(ss.loc.translate("team_dialog_title"), width="medium", dismissible=True)
+def team_dialog():
     team_dict = st.session_state.get("team_dict", {})
     team_names = st.session_state.get("team_names", {})
     col1, col2 = st.columns(2)
@@ -131,39 +152,56 @@ def team_overview_dialog():
         for player_id in team_dict[1]:
             player_name_list.append(st.session_state.player_dict[player_id][0])
         st.pills(team_name, player_name_list, key="team_b_player_list", width="stretch")
-    if st.button("Okay, los gehts!", width="stretch"):
+    if st.button(ss.loc.translate("team_dialog_continue"), width="stretch"):
         st.rerun()
 
-@st.dialog("Runde wirklich unter 20 Sekunden?", dismissible=False)
+@st.dialog(title=ss.loc.translate("forgot_record_dialog_title"), width="medium")
+def forgot_record_dialog():
+    st.warning(ss.loc.translate("forgot_record_dialog_warning"))
+    if st.button(ss.loc.translate("forgot_record_dialog_continue"), width="stretch"):
+        st.rerun()
+
+@st.dialog(title=ss.loc.translate("puzzle_help_dialog_title"), width="medium")
+def puzzle_help_dialog(puzzle_number: int|None=None):
+    if puzzle_number is None:
+        #localize
+        st.pills(ss.loc.translate("puzzle_help_dialog_picker"), PUZZLES, key="puzzle_choice_video", default="1 Inversion", width="stretch")
+        puzzle_number = PUZZLE_NUMBERS[st.session_state.get("puzzle_choice_video")]
+    try:
+        st.video(f"""{puzzle_number}.mp4""")
+    except:
+        st.info(ss.loc.translate("puzzle_help_dialog_no_video"))
+
+@st.dialog(ss.loc.translate("conform_superspeed_dialog_title"), dismissible=False)
 def confirm_superspeed_dialog():
-    st.warning("Eine Runde unter 20 Sekunden ist sehr unwahrscheinlich. Warst du wirklich so schnell?")
+    st.warning(ss.loc.translate("confirm_superspeed_dialog_warning"))
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("Ja, klar!", width="stretch"):
+        if st.button(ss.loc.translate("confirm_superspeed_true"), width="stretch"):
             st.session_state.superspeed = True
             st.rerun()
     with col2:
-        if st.button("Ne, verklickt...", width="stretch"):
+        if st.button(ss.loc.translate("confirm_superspeed_false"), width="stretch"):
             st.session_state.superspeed = False
             st.session_state.score_pending_flag = False
             st.session_state.last_elapsed = 0.0
             st.rerun()
 
-@st.dialog("Upload Highscores")
+@st.dialog(ss.loc.translate("upload_highscore_dialog_title"), width="medium", dismissible=False)
 def upload_highscore_dialog(connection: GSheetsConnection):
     number_of_players = st.session_state.get("num_players", 1)
-    st.info("Bitte für Evaluation folgenden Link scannen.")
+    st.info(ss.loc.translate("upload_highscore_dialog_info"))
     st.image("survey_QR.svg", width=800)
-    st.info("Bitte Studien IDs der Spieler eingeben, damit die Zeiten zugeordnet werden können.")
+    st.info(ss.loc.translate("upload_highscore_dialog_instruction"))
     col1, col2 = st.columns(2)
     with col1:
         for i in range(0, number_of_players):
-            st.text_input(f"Spieler {i+1} Namen:", key=f"username{i}", value=st.session_state.player_dict[i][0], disabled=True)
+            st.text_input(ss.loc.translate("upload_highscore_dialog_name", idx=(str(i+1))), key=f"username{i}", value=st.session_state.player_dict[i][0], disabled=True)
             #st.write(f"{st.session_state.player_dict[i][0]}")
     with col2:
         for i in range(0, number_of_players):
-            st.number_input(f"Spieler {i+1} Studien ID:", key=f"study_id{i}", min_value=1, max_value=500, value=1, step=1)
-    if st.button("Highscores hochladen", use_container_width=True):
+            st.number_input(ss.loc.translate("upload_highscore_dialog_studyid", idx=(str(i+1))), key=f"study_id{i}", min_value=1, max_value=500, value=1, step=1)
+    if st.button(ss.loc.translate("upload_highscores_continue"), use_container_width=True):
         for i in range(0, number_of_players):
             st.session_state.player_dict[i] = (st.session_state.player_dict[i][0], st.session_state.player_dict[i][1], st.session_state.get(f"study_id{i}", ""))
         old_scores = load_online_for_update(connection)
@@ -171,4 +209,3 @@ def upload_highscore_dialog(connection: GSheetsConnection):
         if success_flag:
             st.session_state.session_scores = pd.DataFrame(columns=SCORES_COLS)
         st.rerun()
-
