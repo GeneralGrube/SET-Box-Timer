@@ -8,7 +8,7 @@ import pandas as pd
 
 from setbox_texts import *
 from setbox_mechanics import *
-print("Checkpoint reached: start of setbox_main.py")
+
 #Establish connection to Google Sheets
 conn = st.connection("gsheets", type=GSheetsConnection)
 localizer = Localizer("de")
@@ -45,7 +45,6 @@ def run_timer(ph):
     elapsed = time.time() - st.session_state.start_time
     ph.markdown(html_formatter(format_time(elapsed)), unsafe_allow_html=True)
     
-print("Checkpoint reached: startstop")    
 def startstop():
     st.session_state.superspeed = False
     play_mode = st.session_state.play_mode
@@ -106,7 +105,6 @@ def startstop():
         st.session_state.score_pending_flag = True
 
 ### GUI Start
-print("Checkpoint reached: GUI Start")
 st.title("SET-Box Game Timer")
 
 st.button("Neues Spiel beginnen...", key="new_game", on_click=play_mode_select_dialog, width="stretch")
@@ -125,8 +123,6 @@ if st.session_state.get("player_info_dialog_flag", False):
 if st.session_state.get("team_duel_dialog_flag", False):
     st.session_state.team_duel_dialog_flag = False
     team_dialog()
-
-print("Checkpoint reached: GUI Main Area")
 
 # Current Round Widgets
 if st.session_state.get("active_game_flag", False):
@@ -166,14 +162,20 @@ if st.session_state.get("active_game_flag", False):
         # Time Widgets            
         with col2:
             st.button("⏱️ **Start/Stop**", key="startstop", on_click=startstop, width="stretch")
-            #timer_placeholder = st.empty()
+            
+            # to put placeholder in correct place
             if "timer_placeholder" not in st.session_state:
                 st.session_state.timer_placeholder = st.empty()
-                #st.session_state.timer_placeholder.markdown(html_formatter(format_time(0)), unsafe_allow_html=True)
+            #catch wierd UI bug
+            if st.session_state.game_mode_changed_flag == True:
+                st.session_state.timer_placeholder = st.empty()
+                st.session_state.game_mode_changed_flag = False
+
             if st.session_state.get("running", False):
                 run_timer(st.session_state.timer_placeholder)
             else:
-                st.session_state.timer_placeholder.markdown(html_formatter(format_time(st.session_state.last_elapsed)), unsafe_allow_html=True)
+                with st.session_state.timer_placeholder:
+                    st.markdown(html_formatter(format_time(st.session_state.last_elapsed)), unsafe_allow_html=True)
 
         if st.session_state.play_mode != "open":
             st.button("Nächste Aufgabe", key="next_task", on_click=increment_game_counter, width="stretch")
@@ -202,7 +204,7 @@ if st.session_state.get("active_game_flag", False):
                              st.session_state.current_entry["time_seconds"]) #timing
             st.session_state.game_timings[st.session_state.game_counter] = timings_entry
             st.rerun()
-print("Checkpoint reached: GUI Highscore Area")
+
 
 # Highscore Widgets
 if st.session_state.get("active_game_flag", False):

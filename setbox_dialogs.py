@@ -45,6 +45,11 @@ def play_mode_select_dialog():
             mode_settings = MODE_SETTINGS[play_mode]
             st.session_state.min_players, st.session_state.max_players, st.session_state.player_step_size = mode_settings[0], mode_settings[1], mode_settings[2]
             st.session_state.mode_setup_dialog_flag = True
+            
+            #catch wierd UI bug
+            if st.session_state.previous_game_mode != play_mode:
+                st.session_state.game_mode_changed_flag = True
+                st.session_state.previous_game_mode = play_mode
             st.rerun()
     except KeyError:
         pass

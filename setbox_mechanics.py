@@ -54,6 +54,12 @@ def initialize_session_state(conn: GSheetsConnection, localizer: Localizer):
         st.session_state.player_info_dialog_flag = False
     if "team_duel_dialog_flag" not in st.session_state:
         st.session_state.team_duel_dialog_flag = False
+    #catch wierd UI bug
+    if "previous_game_mode" not in st.session_state:
+        st.session_state.previous_game_mode = False
+    if "game_mode_changed_flag" not in st.session_state:
+        st.session_state.game_mode_changed_flag = False
+    
 
     #Setup variables
     if "num_players" not in st.session_state:
