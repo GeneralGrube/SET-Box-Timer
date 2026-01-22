@@ -1,6 +1,8 @@
 # SET-Box-Timer
 A streamlit WebApp to introduce gamification features to the SET-Box. For more details on the SET-Box see publication:
 
+If you'd like to get in contact, you'll find an email address in the publication.
+
 ## Dependencies
 The [streamlit](https://streamlit.io/) library is needed. If you like to save highscores online in a Google Spreadsheet use [gsheet-connections](https://github.com/streamlit/gsheets-connection).
 
@@ -24,6 +26,9 @@ If you plan to use the app in different settings and networks and on different d
 2. Setup an <code>streamlit Community Cloud</code>, connect it to your <code>GitHub Account</code> and create a new app. See [Prep and Deploy your App in the Community Cloud](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app).
 3. Set up a Google service account to access a spreadsheet. Detailed instructions [Connect Streamlit to a private Google Sheet](https://docs.streamlit.io/develop/tutorials/databases/private-gsheet).
 4. Set up a <code>secrets.toml</code> file and copy its contents in the secrets section of the settings. For an example see below. Detailed setup instructions can be found [here](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management).
+
+### Localization / Language support
+For now, German and English are supported. The language can be selected on startup. You can localize the app by adding a copying and renaming a file in the <code>translations</code> folder to your language. In each language file (e.g. <code>de.json</code> each piece of text is represented by a key/value-pair in the form of <code>"[key]": "[value]",</code>. Example: <code>"puzzle_help_dialog_title": "Wie geht diese Aufgabe?",</code>. Just translate all the values to your language. If you complete a translation, please get in contact and share it.
 
 ### secrets.toml
 Your secrets.toml should look like this. Note the worksheet is specified in this example as opposed to the example from the streamlit Docs. 
