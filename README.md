@@ -28,7 +28,7 @@ If you plan to use the app in different settings and networks and on different d
 4. Set up a <code>secrets.toml</code> file and copy its contents in the secrets section of the settings. For an example see below. Detailed setup instructions can be found [here](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management).
 
 ### Localization / Language support
-For now, German and English are supported. The language can be selected on startup. You can localize the app by adding a copying and renaming a file in the <code>translations</code> folder to your language. In each language file (e.g. <code>de.json</code> each piece of text is represented by a key/value-pair in the form of <code>"[key]": "[value]",</code>. Example: <code>"puzzle_help_dialog_title": "Wie geht diese Aufgabe?",</code>. Just translate all the values to your language. If you complete a translation, please get in contact and share it.
+For now, German and English are supported. The language can be selected on startup. You can localize the app by copying and renaming a file in the <code>translations</code> folder to your language. In each language file (e.g. <code>de.json</code> each piece of text is represented by a key/value-pair in the form of <code>"[key]": "[value]",</code>. Example: <code>"puzzle_help_dialog_title": "Wie geht diese Aufgabe?",</code>. Just translate all the values to your language. If you complete a translation, please get in contact and share it.
 
 ### secrets.toml
 Your secrets.toml should look like this. Note the worksheet is specified in this example as opposed to the example from the streamlit Docs. 
