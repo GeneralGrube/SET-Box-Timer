@@ -104,7 +104,10 @@ def game_setup(play_mode: str, num_players: int, num_puzzles:int, random_pairing
         
     # Aufgabenabfolge einstellen
     all_puzzles = list(PUZZLE_NUMBERS.values())[:5]
-    selected_puzzles = random.sample(all_puzzles, num_puzzles)
+    if num_puzzles > len(all_puzzles):
+        selected_puzzles = all_puzzles
+    else:
+        selected_puzzles = random.sample(all_puzzles, num_puzzles)
     
     puzzle_sequence = [] #list of team/pair/player number and puzzle tuples
     shifter = 0
@@ -146,10 +149,17 @@ def game_setup(play_mode: str, num_players: int, num_puzzles:int, random_pairing
             
             # puzzle selection
             # make sure every team sees every puzzle at least once if enough tasks (num_puzzles >= total_tasks/2)
-            if (i // 2) == num_puzzles:
+            if i == 1: # There is always at least 2 puzzles. Assign the second puzzle to the other team to ensure both teams see both puzzles at the start.
+                curr_puzzle = selected_puzzles[(i+shifter) % len(selected_puzzles)]
+            elif (i + 1) >= num_puzzles: # If half the round is over, assign remaining puzzles to teams that haven't seen them yet
+                #reset played puzzles for teams that have seen all puzzles to allow repetition
+                if len(team_puzzles[curr_team]) >= len(all_puzzles):
+                    team_puzzles[curr_team] = []
+                
                 played_puzzles = set(team_puzzles[curr_team])
                 remaining_puzzle = set(selected_puzzles).difference(played_puzzles)
                 curr_puzzle = list(remaining_puzzle)[0]
+                
             # else just semi-randomly select a puzzle
             else:
                 curr_puzzle = selected_puzzles[(i+shifter) % len(selected_puzzles)]
@@ -169,7 +179,7 @@ def game_setup(play_mode: str, num_players: int, num_puzzles:int, random_pairing
             if (i + 1) % len(selected_puzzles) == 0:
                 if len(selected_puzzles) >= len(curr_player_list):
                     shifter += 1  # change starting puzzle after each full cycle
-            
+        
     return puzzle_sequence
 
 def set_highscores(current_highscores: dict, current_puzzle: str, entry: dict):
