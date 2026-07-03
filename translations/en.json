@@ -2,7 +2,8 @@
     "play_modes": {
         "Open Play": "open",
         "Free for All": "single_duel",
-        "Team Duel": "team_duel"
+        "Team Duel": "team_duel",
+        "LNDW Mode": "lndw"
     },
     "play_mode_dialog_title": "Select Game Mode",
     "play_mode_dialog_label": "Select Game Mode",
@@ -18,10 +19,12 @@
     "settings_dialog_total_tasks_label": "Total Number of Puzzles",
     "settings_dialog_total_tasks_tooltip": "Total number of puzzles played in this session.\n- In duel modes, every player playes at least one puzzle.\n- In team duell mode, both teams play half the puzzles.",
     "settings_dialog_total_tasks_info": "With this setting, the session will last approximately {from_min} to {to_min} minutes.",
+    "settings_dialog_lndw_info": "In LNDW mode, the player name is set anew each round. Otherwise, LNDW corresponds to the open play mode. There are no fixed puzzles that need to be solved.",
     "settings_dialog_continue": "Continue to Player Information...",
     "player_dialog_title": "Player Information",
     "player_dialog_name": "Enter Player {idx} Name",
     "player_dialog_semester": "Enter Player {idx} Semester",
+    "player_dialog_semester_lndw": "Enter Player {idx} Age (optional)",
     "player_dialog_continue": "Save Player Information",
     "player_dialog_error_duplicate_name": "The name '{name}' has been entered multiple times. Please use unique player names.",
     "team_dialog_title": "Team Overview",

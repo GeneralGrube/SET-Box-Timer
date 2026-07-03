@@ -49,7 +49,7 @@ def startstop():
     st.session_state.superspeed = False
     play_mode = st.session_state.play_mode
     
-    if play_mode == "open":
+    if play_mode in ["open", "lndw"]:
         st.session_state.error_msg = ""
         # Ensure puzzle selected
         try:
@@ -120,6 +120,7 @@ if st.session_state.get("mode_setup_dialog_flag", False):
 if st.session_state.get("player_info_dialog_flag", False):
     st.session_state.player_info_dialog_flag = False
     player_dialog()
+
 if st.session_state.get("team_duel_dialog_flag", False):
     st.session_state.team_duel_dialog_flag = False
     team_dialog()
@@ -127,21 +128,25 @@ if st.session_state.get("team_duel_dialog_flag", False):
 # Current Round Widgets
 if st.session_state.get("active_game_flag", False):
     st.divider()
-    if (st.session_state.game_counter == len(st.session_state.puzzle_sequence)) & (st.session_state.play_mode != "open"):
+    if (st.session_state.game_counter == len(st.session_state.puzzle_sequence)) & (st.session_state.play_mode not in ["open", "lndw"]):
         st.balloons()
         rankings_formatted = get_rankings(st.session_state.play_mode, st.session_state.puzzle_sequence, st.session_state.player_dict, st.session_state.game_timings, format_for_display=True)
-        st.markdown(html_formatter(f"And the winner is...\n🏆{rankings_formatted[0]["Spieler"]}🏆"), unsafe_allow_html=True)
+        st.markdown(html_formatter(f"""And the winner is...\n🏆{rankings_formatted[0]["Spieler"]}🏆"""), unsafe_allow_html=True)
         st.dataframe(rankings_formatted, hide_index=True, width="stretch")
         st.button("Scores online speichern", key="save_scores_end", on_click=upload_highscore_dialog, args=(conn,), width="stretch")
         reset_game()
     else:
-        if st.session_state.play_mode != "open":
+        if st.session_state.play_mode not in ["open", "lndw"]:
             st.progress((st.session_state.game_counter) / len(st.session_state.puzzle_sequence), text=progress_text(st.session_state.game_counter, len(st.session_state.puzzle_sequence)))
         col1, col2 = st.columns(2, vertical_alignment="center")
         # Player/Puzzle Widgets
         with col1:
             if st.session_state.play_mode == "open":
                 st.pills("Spieler wählen", st.session_state.inv_player_dict.keys(), key="selected_player", width="stretch")
+                st.pills("Aufgabe wählen", options=PUZZLES, key="puzzle_choice", width="stretch")
+                st.button(":question: Wie geht diese Aufgaben?", key="help_task", on_click=puzzle_help_dialog, args=(None,), width="stretch")
+            elif st.session_state.play_mode == "lndw":
+                st.pills("Spieler wählen", st.session_state.inv_player_dict.keys(), default=list(st.session_state.inv_player_dict.keys())[0], key="selected_player", width="stretch")
                 st.pills("Aufgabe wählen", options=PUZZLES, key="puzzle_choice", width="stretch")
                 st.button(":question: Wie geht diese Aufgaben?", key="help_task", on_click=puzzle_help_dialog, args=(None,), width="stretch")
             else:
@@ -177,7 +182,7 @@ if st.session_state.get("active_game_flag", False):
                 with st.session_state.timer_placeholder:
                     st.markdown(html_formatter(format_time(st.session_state.last_elapsed)), unsafe_allow_html=True)
 
-        if st.session_state.play_mode != "open":
+        if st.session_state.play_mode not in ["open", "lndw"]:
             st.button("Nächste Aufgabe", key="next_task", on_click=increment_game_counter, width="stretch")
 
     if st.session_state.error_msg:
@@ -203,6 +208,8 @@ if st.session_state.get("active_game_flag", False):
                              st.session_state.current_entry["puzzle"], #puzzle
                              st.session_state.current_entry["time_seconds"]) #timing
             st.session_state.game_timings[st.session_state.game_counter] = timings_entry
+            if st.session_state.play_mode  == "lndw":
+                st.session_state.player_info_dialog_flag = True
             st.rerun()
 
 
@@ -210,7 +217,7 @@ if st.session_state.get("active_game_flag", False):
 if st.session_state.get("active_game_flag", False):
     st.divider()
     # Current Round Scores
-    if st.session_state.play_mode != "open":
+    if st.session_state.play_mode not in ["open", "lndw"]:
         st.subheader("Rundenzeiten", width="stretch")
 
         if st.session_state.game_timings:
@@ -222,7 +229,7 @@ if st.session_state.get("active_game_flag", False):
             st.info(f"Bisher liegen keine Zeiten vor.")
 
     # Highscore list
-    if st.session_state.play_mode == "open":
+    if st.session_state.play_mode in ["open", "lndw"]:
         puzzle = st.session_state.get("puzzle_choice") or ""
     else:
         puzzle = INV_PUZZLE_NUMBERS[st.session_state.puzzle_sequence[st.session_state.game_counter][1]]
@@ -241,7 +248,7 @@ if st.session_state.get("active_game_flag", False):
         else:
             st.info(f"No highscores yet for '{puzzle}'. Press Start/Stop to time something and record it.")
 
-if st.session_state.play_mode == "open" and st.session_state.session_scores is not None and not st.session_state.session_scores.empty:
+if st.session_state.play_mode in ["open", "lndw"] and st.session_state.session_scores is not None and not st.session_state.session_scores.empty:
     st.divider()
     placeholder = st.empty()
     st.button("Scores online speichern", key="save_scores_end_open", on_click=upload_highscore_dialog, args=(conn,), width="stretch")

@@ -65,13 +65,16 @@ def settings_dialog():
         with col2:
             name_team_b = st.text_input(ss.loc.translate("settings_dialog_team_name_b_label"), value=ss.loc.translate("settings_dialog_team_b_name_suggestion"))
 
-    num_players = st.slider(ss.loc.translate("settings_dialog_num_players_label"), min_value=st.session_state.min_players, max_value=st.session_state.max_players, step=st.session_state.player_step_size, value=st.session_state.min_players)
-    
+    if play_mode != "lndw":
+        num_players = st.slider(ss.loc.translate("settings_dialog_num_players_label"), min_value=st.session_state.min_players, max_value=st.session_state.max_players, step=st.session_state.player_step_size, value=st.session_state.min_players)
+    else:
+        num_players = 1
+
     if play_mode in ["pair_duel", "team_duel"]:
         random_pairing = st.toggle(ss.loc.translate("settings_dialog_random_pairing_label"), value=False, help=ss.loc.translate("settings_dialog_random_pairing_tooltip"))
     else: random_pairing = False
 
-    if play_mode != "open":
+    if play_mode not in ["open", "lndw"]:
         maximum_games = num_players * 5
         total_tasks = st.slider(ss.loc.translate("settings_dialog_total_tasks_label"), min_value=num_players, max_value=maximum_games, step=num_players, value=num_players, help=ss.loc.translate("settings_dialog_total_tasks_tooltip"))
         st.info(ss.loc.translate("settings_dialog_total_tasks_info", from_min=str(total_tasks * 4), to_min=str(total_tasks * 6)))
@@ -83,6 +86,9 @@ def settings_dialog():
         num_puzzles = total_tasks // num_players 
     elif play_mode == "team_duel":
         num_puzzles = total_tasks // 2
+    elif play_mode == "lndw":
+        num_puzzles = 0
+        st.info(ss.loc.translate("settings_dialog_lndw_info"))
 
     if st.button(ss.loc.translate("settings_dialog_continue"), use_container_width=True):
         st.session_state.num_players = num_players
@@ -110,12 +116,19 @@ def player_dialog():
             st.session_state.player_dict[i] = ("", 6)
 
     col1, col2 = st.columns(2)
+    
     with col1:
         for i in range(0, number_of_players):
-            st.text_input(ss.loc.translate("player_dialog_name", idx=(str(i+1))), key=f"username{i}", value=st.session_state.player_dict[i][0])
+            if st.session_state.play_mode == "lndw":
+                st.text_input(ss.loc.translate("player_dialog_name", idx=(str(i+1))), key=f"username{i}", value=st.session_state.player_dict[i][0], placeholder="begeisterter LNDW Teilnehmer")
+            else:
+                st.text_input(ss.loc.translate("player_dialog_name", idx=(str(i+1))), key=f"username{i}", value=st.session_state.player_dict[i][0])
     with col2:
         for i in range(0, number_of_players):
-            st.number_input(ss.loc.translate("player_dialog_semester", idx=(str(i+1))), key=f"semester{i}", min_value=1, max_value=20, value=st.session_state.player_dict[i][1], step=1)
+            if st.session_state.play_mode == "lndw":
+                st.number_input(ss.loc.translate("player_dialog_semester_lndw", idx=(str(i+1))), key=f"semester{i}", min_value=0, max_value=100, value=st.session_state.player_dict[i][1], step=1)
+            else:
+                st.number_input(ss.loc.translate("player_dialog_semester", idx=(str(i+1))), key=f"semester{i}", min_value=1, max_value=20, value=st.session_state.player_dict[i][1], step=1)
     error_placeholder = st.empty()
     
     if st.button(ss.loc.translate("player_dialog_continue"), use_container_width=True):
@@ -128,13 +141,19 @@ def player_dialog():
                 error_placeholder.error(ss.loc.translate("player_dialog_error_duplicate_name", name=st.session_state.get(f"username{i}")))
                 error_flag = True
             else:
-                player_dict[i] = (f"{st.session_state[f'username{i}']}", st.session_state.get(f"semester{i}", ""))
+                if st.session_state.play_mode == "lndw":
+                    if st.session_state[f'username{0}'] == "":
+                        player_dict[i] = (f"LNDW-Teilnehmer", st.session_state.get(f"semester{i}", ""))
+                    else:
+                        player_dict[i] = (f"{st.session_state[f'username{i}']}", st.session_state.get(f"semester{i}", ""))
+                else:
+                    player_dict[i] = (f"{st.session_state[f'username{i}']}", st.session_state.get(f"semester{i}", ""))
                 checked_player_names.append(f"{st.session_state[f'username{i}']}")
         if not error_flag:
             st.session_state.player_dict = player_dict
             st.session_state.inv_player_dict = {v[0]: k for k, v in player_dict.items()}
             st.session_state.active_game_flag = True
-            if st.session_state.play_mode != "open":
+            if st.session_state.play_mode not in ["open", "lndw"]:
                 st.session_state.puzzle_sequence = game_setup(st.session_state.play_mode, st.session_state.num_players, st.session_state.num_puzzles, st.session_state.random_pairing, st.session_state.total_tasks)
             if st.session_state.play_mode == "team_duel":
                 st.session_state.team_duel_dialog_flag = True

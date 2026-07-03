@@ -2,7 +2,8 @@
     "play_modes": {
         "Offenes Spiel": "open",
         "Alle gegen Alle": "single_duel",
-        "Team-Duell": "team_duel"
+        "Team-Duell": "team_duel",
+        "LNDW Modus": "lndw"
     },
     "play_mode_dialog_title": "Spielmodus auswählen",
     "play_mode_dialog_label": "Spielmodus auswählen",
@@ -18,10 +19,12 @@
     "settings_dialog_total_tasks_label": "Gesamtzahl Aufgaben",
     "settings_dialog_total_tasks_tooltip": "Gesamtzahl der Aufgaben, die in dieser Runde gespielt werden.\n- In Duell-Modi kommt jeder Spieler mindestens einmal an die Reihe.\n- Im Team-Duell spielt jedes Team die Hälfte der Aufgaben.",
     "settings_dialog_total_tasks_info": "Bei dieser Einstellung dauert die Runde etwa {from_min} bis {to_min} Minuten.",
+    "settings_dialog_lndw_info": "Im LNDW Modus wird der Spielername jede Runde neu festgelegt. Ansonsten enspricht LNDW dem offenen Spielmodus. Es gibt keine festgelegten Aufgaben, die gelöst werden müssen.",
     "settings_dialog_continue": "Weiter zu den Spieler Informationen...",
     "player_dialog_title": "Spieler Informationen",
     "player_dialog_name": "Spieler {idx} Namen eingeben",
     "player_dialog_semester": "Spieler {idx} Semester eingeben",
+    "player_dialog_semester_lndw": "Spieler {idx} Alter eingeben (optional)",
     "player_dialog_continue": "Spieler Informationen speichern",
     "player_dialog_error_duplicate_name": "Der Name '{name}' wurde mehrfach eingegeben. Bitte eindeutige Spielernamen verwenden.",
     "team_dialog_title": "Team Übersicht",
